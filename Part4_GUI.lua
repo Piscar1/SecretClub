@@ -2,6 +2,34 @@
 -- SecretClub GUI - ЧАСТЬ 4: GUI INTERFACE
 -- ============================================
 
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+-- Variables
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+
+-- Update Character on respawn
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+    Character = newChar
+end)
+
+-- Variables from Part3 (these functions should be defined in Part3)
+local createPage, createToggle, createSlider, createTextBox, createButton, createSectionHeader
+local Invisibile, Uninvisible
+local Highlight, UndergroundAnimation, isInvisible
+local animations, stopAllAnimations
+local GetStand, SearchPlayer
+
+-- Fly variables
+local flyEnabled = false
+local flyKeybind = Enum.KeyCode.Q
+local flySpeed = 50
+local bv, bg
+
 -- ========================================
 -- INVISIBILITY FUNCTIONS
 -- ========================================
@@ -27,7 +55,7 @@ function PlayAnimation(HumanoidCharacter, AnimationID, AnimationSpeed, Time)
     return animationTrack
 end
 
-local function Invisibile()
+Invisibile = function()
     local HUD = LocalPlayer.PlayerGui:FindFirstChild("HUD")
     if HUD then
         HUD.Parent = game:GetService("StarterGui")
@@ -58,7 +86,7 @@ local function Invisibile()
     isInvisible = true
 end
 
-local function Uninvisible()
+Uninvisible = function()
     PlayAnimation(Character, "rbxassetid://7189062263", 0, 5):Stop()
     
     if Highlight then
@@ -66,6 +94,110 @@ local function Uninvisible()
         Highlight = nil
     end
     isInvisible = false
+end
+
+-- ========================================
+-- UI HELPER FUNCTIONS (if not loaded from Part3)
+-- ========================================
+
+-- These should be loaded from Part3, but including them here as fallback
+if not createToggle then
+    createToggle = function(parent, labelText, defaultValue, callback)
+        local Toggle = Instance.new("Frame")
+        Toggle.Size = UDim2.new(1, 0, 0, 24)
+        Toggle.BackgroundTransparency = 1
+        Toggle.Parent = parent
+        
+        local Label = Instance.new("TextLabel")
+        Label.Size = UDim2.new(0.75, 0, 1, 0)
+        Label.BackgroundTransparency = 1
+        Label.Text = labelText
+        Label.Font = Enum.Font.Gotham
+        Label.TextSize = 12
+        Label.TextColor3 = Color3.fromRGB(180, 180, 180)
+        Label.TextXAlignment = Enum.TextXAlignment.Left
+        Label.Parent = Toggle
+        
+        local ToggleButton = Instance.new("TextButton")
+        ToggleButton.Size = UDim2.new(0, 40, 0, 18)
+        ToggleButton.Position = UDim2.new(1, -45, 0.5, -9)
+        ToggleButton.BackgroundColor3 = defaultValue and Color3.fromRGB(60, 140, 220) or Color3.fromRGB(40, 40, 40)
+        ToggleButton.Text = ""
+        ToggleButton.BorderSizePixel = 0
+        ToggleButton.Parent = Toggle
+        
+        local ToggleCorner = Instance.new("UICorner")
+        ToggleCorner.CornerRadius = UDim.new(1, 0)
+        ToggleCorner.Parent = ToggleButton
+        
+        local ToggleDot = Instance.new("Frame")
+        ToggleDot.Size = UDim2.new(0, 14, 0, 14)
+        ToggleDot.Position = defaultValue and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
+        ToggleDot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        ToggleDot.BorderSizePixel = 0
+        ToggleDot.Parent = ToggleButton
+        
+        local DotCorner = Instance.new("UICorner")
+        DotCorner.CornerRadius = UDim.new(1, 0)
+        DotCorner.Parent = ToggleDot
+        
+        local isToggled = defaultValue
+        
+        ToggleButton.MouseButton1Click:Connect(function()
+            isToggled = not isToggled
+            
+            TweenService:Create(ToggleButton, TweenInfo.new(0.2), {
+                BackgroundColor3 = isToggled and Color3.fromRGB(60, 140, 220) or Color3.fromRGB(40, 40, 40)
+            }):Play()
+            
+            TweenService:Create(ToggleDot, TweenInfo.new(0.2), {
+                Position = isToggled and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
+            }):Play()
+            
+            if callback then callback(isToggled) end
+        end)
+        
+        return Toggle
+    end
+end
+
+if not createPage then
+    createPage = function()
+        local Page = Instance.new("Frame")
+        Page.Size = UDim2.new(1, 0, 1, 0)
+        Page.BackgroundTransparency = 1
+        Page.Visible = false
+        
+        local Left = Instance.new("ScrollingFrame")
+        Left.Size = UDim2.new(0.48, 0, 1, 0)
+        Left.Position = UDim2.new(0, 0, 0, 0)
+        Left.BackgroundTransparency = 1
+        Left.ScrollBarThickness = 4
+        Left.Parent = Page
+        
+        local Right = Instance.new("ScrollingFrame")
+        Right.Size = UDim2.new(0.48, 0, 1, 0)
+        Right.Position = UDim2.new(0.52, 0, 0, 0)
+        Right.BackgroundTransparency = 1
+        Right.ScrollBarThickness = 4
+        Right.Parent = Page
+        
+        return Page, Left, Right
+    end
+end
+
+if not createSectionHeader then
+    createSectionHeader = function(text)
+        local Header = Instance.new("TextLabel")
+        Header.Size = UDim2.new(1, 0, 0, 30)
+        Header.BackgroundTransparency = 1
+        Header.Text = text
+        Header.Font = Enum.Font.GothamBold
+        Header.TextSize = 14
+        Header.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Header.TextXAlignment = Enum.TextXAlignment.Left
+        return Header
+    end
 end
 
 -- ========================================
@@ -90,14 +222,7 @@ local function toggleFlyState(enabled)
     end
 end
 
-do
-MovementPage, MovementLeft, MovementRight = createPage()
-MovementPage.Visible = true
-
-local MovementHeader = createSectionHeader("Movement")
-MovementHeader.Parent = MovementLeft
-
-flyToggleButton = createToggle(MovementLeft, "Fly", false, toggleFlyState)
+print("✅ [Part 4/4] GUI Interface loaded")
 
 local flyKeybindBtn = createButton(MovementLeft, "Fly Key: F [Right Click]", function() end)
 flyKeybindBtn.MouseButton2Click:Connect(function()
