@@ -18,7 +18,6 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
 end)
 
 -- Variables from Part3 (these functions should be defined in Part3)
-local createPage, createToggle, createSlider, createTextBox, createButton, createSectionHeader
 local Invisibile, Uninvisible
 local Highlight, UndergroundAnimation, isInvisible
 local animations, stopAllAnimations
@@ -29,6 +28,17 @@ local flyEnabled = false
 local flyKeybind = Enum.KeyCode.Q
 local flySpeed = 50
 local bv, bg
+
+-- Additional variables used in the script
+local noclipEnabled = false
+local speedHackEnabled = false
+local walkSpeed = 16
+local espBoxEnabled = false
+local espNameEnabled = false
+local espDistanceEnabled = false
+local espTracerEnabled = false
+local espFontSize = 14
+local espBoxColor = Color3.fromRGB(255, 255, 255)
 
 -- ========================================
 -- INVISIBILITY FUNCTIONS
@@ -101,8 +111,7 @@ end
 -- ========================================
 
 -- These should be loaded from Part3, but including them here as fallback
-if not createToggle then
-    createToggle = function(parent, labelText, defaultValue, callback)
+local function createToggle(parent, labelText, defaultValue, callback)
         local Toggle = Instance.new("Frame")
         Toggle.Size = UDim2.new(1, 0, 0, 24)
         Toggle.BackgroundTransparency = 1
@@ -161,8 +170,7 @@ if not createToggle then
     end
 end
 
-if not createSlider then
-    createSlider = function(parent, labelText, min, max, default, callback)
+local function createSlider(parent, labelText, min, max, default, callback)
         local Slider = Instance.new("Frame")
         Slider.Size = UDim2.new(1, 0, 0, 24)
         Slider.BackgroundTransparency = 1
@@ -248,8 +256,7 @@ if not createSlider then
     end
 end
 
-if not createTextBox then
-    createTextBox = function(parent, labelText, placeholderText, callback)
+local function createTextBox(parent, labelText, placeholderText, callback)
         local Container = Instance.new("Frame")
         Container.Size = UDim2.new(1, 0, 0, 34)
         Container.BackgroundTransparency = 1
@@ -291,8 +298,7 @@ if not createTextBox then
     end
 end
 
-if not createButton then
-    createButton = function(parent, text, callback)
+local function createButton(parent, text, callback)
         local Button = Instance.new("TextButton")
         Button.Size = UDim2.new(1, 0, 0, 32)
         Button.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
@@ -322,8 +328,7 @@ if not createButton then
     end
 end
 
-if not createPage then
-    createPage = function()
+local function createPage()
         local Page = Instance.new("Frame")
         Page.Size = UDim2.new(1, 0, 1, 0)
         Page.BackgroundTransparency = 1
@@ -347,18 +352,16 @@ if not createPage then
     end
 end
 
-if not createSectionHeader then
-    createSectionHeader = function(text)
-        local Header = Instance.new("TextLabel")
-        Header.Size = UDim2.new(1, 0, 0, 30)
-        Header.BackgroundTransparency = 1
-        Header.Text = text
-        Header.Font = Enum.Font.GothamBold
-        Header.TextSize = 14
-        Header.TextColor3 = Color3.fromRGB(255, 255, 255)
-        Header.TextXAlignment = Enum.TextXAlignment.Left
-        return Header
-    end
+local function createSectionHeader(text)
+    local Header = Instance.new("TextLabel")
+    Header.Size = UDim2.new(1, 0, 0, 30)
+    Header.BackgroundTransparency = 1
+    Header.Text = text
+    Header.Font = Enum.Font.GothamBold
+    Header.TextSize = 14
+    Header.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Header.TextXAlignment = Enum.TextXAlignment.Left
+    return Header
 end
 
 -- ========================================
