@@ -161,6 +161,167 @@ if not createToggle then
     end
 end
 
+if not createSlider then
+    createSlider = function(parent, labelText, min, max, default, callback)
+        local Slider = Instance.new("Frame")
+        Slider.Size = UDim2.new(1, 0, 0, 24)
+        Slider.BackgroundTransparency = 1
+        Slider.Parent = parent
+        
+        local Label = Instance.new("TextLabel")
+        Label.Size = UDim2.new(0.40, 0, 1, 0)
+        Label.BackgroundTransparency = 1
+        Label.Text = labelText
+        Label.Font = Enum.Font.Gotham
+        Label.TextSize = 12
+        Label.TextColor3 = Color3.fromRGB(180, 180, 180)
+        Label.TextXAlignment = Enum.TextXAlignment.Left
+        Label.Parent = Slider
+        
+        local Value = Instance.new("TextLabel")
+        Value.Size = UDim2.new(0, 30, 1, 0)
+        Value.Position = UDim2.new(1, -30, 0, 0)
+        Value.BackgroundTransparency = 1
+        Value.Text = tostring(default)
+        Value.Font = Enum.Font.Gotham
+        Value.TextSize = 12
+        Value.TextColor3 = Color3.fromRGB(120, 120, 120)
+        Value.TextXAlignment = Enum.TextXAlignment.Right
+        Value.Parent = Slider
+        
+        local SliderBack = Instance.new("Frame")
+        SliderBack.Size = UDim2.new(0.45, 0, 0, 3)
+        SliderBack.Position = UDim2.new(0.43, 0, 0.5, -1.5)
+        SliderBack.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        SliderBack.BorderSizePixel = 0
+        SliderBack.Parent = Slider
+        
+        local SliderFill = Instance.new("Frame")
+        SliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+        SliderFill.BackgroundColor3 = Color3.fromRGB(60, 140, 220)
+        SliderFill.BorderSizePixel = 0
+        SliderFill.Parent = SliderBack
+        
+        local SliderDot = Instance.new("Frame")
+        SliderDot.Size = UDim2.new(0, 10, 0, 10)
+        SliderDot.Position = UDim2.new((default - min) / (max - min), -5, 0.5, -5)
+        SliderDot.BackgroundColor3 = Color3.fromRGB(60, 140, 220)
+        SliderDot.BorderSizePixel = 0
+        SliderDot.Parent = SliderBack
+        
+        local DotCorner = Instance.new("UICorner")
+        DotCorner.CornerRadius = UDim.new(1, 0)
+        DotCorner.Parent = SliderDot
+        
+        local sliderDragging = false
+        
+        SliderBack.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                sliderDragging = true
+            end
+        end)
+        
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                sliderDragging = false
+            end
+        end)
+        
+        UserInputService.InputChanged:Connect(function(input)
+            if sliderDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                local mouse = UserInputService:GetMouseLocation().X
+                local sliderPos = SliderBack.AbsolutePosition.X
+                local sliderSize = SliderBack.AbsoluteSize.X
+                
+                local percent = math.clamp((mouse - sliderPos) / sliderSize, 0, 1)
+                local value = math.floor(min + (max - min) * percent)
+                
+                Value.Text = tostring(value)
+                SliderFill.Size = UDim2.new(percent, 0, 1, 0)
+                SliderDot.Position = UDim2.new(percent, -5, 0.5, -5)
+                
+                if callback then callback(value) end
+            end
+        end)
+        
+        return Slider
+    end
+end
+
+if not createTextBox then
+    createTextBox = function(parent, labelText, placeholderText, callback)
+        local Container = Instance.new("Frame")
+        Container.Size = UDim2.new(1, 0, 0, 34)
+        Container.BackgroundTransparency = 1
+        Container.Parent = parent
+        
+        local Label = Instance.new("TextLabel")
+        Label.Size = UDim2.new(0.35, 0, 1, 0)
+        Label.BackgroundTransparency = 1
+        Label.Text = labelText
+        Label.Font = Enum.Font.Gotham
+        Label.TextSize = 12
+        Label.TextColor3 = Color3.fromRGB(180, 180, 180)
+        Label.TextXAlignment = Enum.TextXAlignment.Left
+        Label.Parent = Container
+        
+        local TextBox = Instance.new("TextBox")
+        TextBox.Size = UDim2.new(0.60, 0, 0, 28)
+        TextBox.Position = UDim2.new(0.40, 0, 0.5, -14)
+        TextBox.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+        TextBox.Text = ""
+        TextBox.PlaceholderText = placeholderText
+        TextBox.Font = Enum.Font.Gotham
+        TextBox.TextSize = 11
+        TextBox.TextColor3 = Color3.fromRGB(200, 200, 200)
+        TextBox.BorderSizePixel = 0
+        TextBox.Parent = Container
+        
+        local TextBoxCorner = Instance.new("UICorner")
+        TextBoxCorner.CornerRadius = UDim.new(0, 20)
+        TextBoxCorner.Parent = TextBox
+        
+        if callback then
+            TextBox.FocusLost:Connect(function()
+                callback(TextBox.Text)
+            end)
+        end
+        
+        return Container, TextBox
+    end
+end
+
+if not createButton then
+    createButton = function(parent, text, callback)
+        local Button = Instance.new("TextButton")
+        Button.Size = UDim2.new(1, 0, 0, 32)
+        Button.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+        Button.Text = text
+        Button.Font = Enum.Font.Gotham
+        Button.TextSize = 12
+        Button.TextColor3 = Color3.fromRGB(200, 200, 200)
+        Button.BorderSizePixel = 0
+        Button.Parent = parent
+        
+        local ButtonCorner = Instance.new("UICorner")
+        ButtonCorner.CornerRadius = UDim.new(0, 20)
+        ButtonCorner.Parent = Button
+        
+        Button.MouseEnter:Connect(function()
+            TweenService:Create(Button, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(42, 42, 42)}):Play()
+        end)
+        Button.MouseLeave:Connect(function()
+            TweenService:Create(Button, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(32, 32, 32)}):Play()
+        end)
+        
+        if callback then
+            Button.MouseButton1Click:Connect(callback)
+        end
+        
+        return Button
+    end
+end
+
 if not createPage then
     createPage = function()
         local Page = Instance.new("Frame")
