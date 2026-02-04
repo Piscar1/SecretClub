@@ -2,7 +2,13 @@
 -- SecretClub GUI - ЧАСТЬ 2: STAND PILOT SYSTEM
 -- ============================================
 
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
 -- Variables
+local LocalPlayer = Players.LocalPlayer
 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 
 -- ========================================
