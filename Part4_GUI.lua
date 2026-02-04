@@ -17,8 +17,7 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
     Character = newChar
 end)
 
--- Variables from Part3 (these functions should be defined in Part3)
-local Invisibile, Uninvisible
+-- Variables from Part3 (these should come from previous parts)
 local Highlight, UndergroundAnimation, isInvisible
 local animations, stopAllAnimations
 local GetStand, SearchPlayer
@@ -39,6 +38,269 @@ local espDistanceEnabled = false
 local espTracerEnabled = false
 local espFontSize = 14
 local espBoxColor = Color3.fromRGB(255, 255, 255)
+
+-- ========================================
+-- UI HELPER FUNCTIONS
+-- ========================================
+
+-- Create a ContentArea placeholder (if not already created by Part1)
+local ContentArea = script.Parent:FindFirstChild("ContentArea")
+if not ContentArea then
+    ContentArea = Instance.new("Frame")
+    ContentArea.Name = "ContentArea"
+    ContentArea.Size = UDim2.new(1, 0, 1, 0)
+    ContentArea.Position = UDim2.new(0, 0, 0, 0)
+    ContentArea.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+    ContentArea.BorderSizePixel = 0
+end
+
+local function createPage()
+    local ScrollFrame = Instance.new("ScrollingFrame")
+    ScrollFrame.Size = UDim2.new(1, -24, 1, -24)
+    ScrollFrame.Position = UDim2.new(0, 12, 0, 12)
+    ScrollFrame.BackgroundTransparency = 1
+    ScrollFrame.BorderSizePixel = 0
+    ScrollFrame.ScrollBarThickness = 0
+    ScrollFrame.ScrollingEnabled = true
+    ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 600)
+    ScrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    ScrollFrame.Visible = false
+    ScrollFrame.Parent = ContentArea
+    
+    local LeftColumn = Instance.new("Frame")
+    LeftColumn.Name = "LeftColumn"
+    LeftColumn.Size = UDim2.new(0.48, 0, 1, 0)
+    LeftColumn.Position = UDim2.new(0, 0, 0, 0)
+    LeftColumn.BackgroundTransparency = 1
+    LeftColumn.Parent = ScrollFrame
+    
+    local LeftLayout = Instance.new("UIListLayout")
+    LeftLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    LeftLayout.Padding = UDim.new(0, 6)
+    LeftLayout.Parent = LeftColumn
+    
+    local RightColumn = Instance.new("Frame")
+    RightColumn.Name = "RightColumn"
+    RightColumn.Size = UDim2.new(0.48, 0, 1, 0)
+    RightColumn.Position = UDim2.new(0.52, 0, 0, 0)
+    RightColumn.BackgroundTransparency = 1
+    RightColumn.Parent = ScrollFrame
+    
+    local RightLayout = Instance.new("UIListLayout")
+    RightLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    RightLayout.Padding = UDim.new(0, 6)
+    RightLayout.Parent = RightColumn
+    
+    return ScrollFrame, LeftColumn, RightColumn
+end
+
+local function createSectionHeader(text)
+    local Header = Instance.new("TextLabel")
+    Header.Size = UDim2.new(1, 0, 0, 28)
+    Header.BackgroundTransparency = 1
+    Header.Text = text
+    Header.Font = Enum.Font.GothamBold
+    Header.TextSize = 13
+    Header.TextColor3 = Color3.fromRGB(240, 240, 240)
+    Header.TextXAlignment = Enum.TextXAlignment.Left
+    return Header
+end
+
+local function createToggle(parent, labelText, defaultValue, callback)
+    local Toggle = Instance.new("Frame")
+    Toggle.Size = UDim2.new(1, 0, 0, 24)
+    Toggle.BackgroundTransparency = 1
+    Toggle.Parent = parent
+    
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(1, -25, 1, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = labelText
+    Label.Font = Enum.Font.Gotham
+    Label.TextSize = 12
+    Label.TextColor3 = Color3.fromRGB(180, 180, 180)
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = Toggle
+    
+    local Switch = Instance.new("TextButton")
+    Switch.Size = UDim2.new(0, 16, 0, 16)
+    Switch.Position = UDim2.new(1, -16, 0.5, -8)
+    Switch.BackgroundColor3 = defaultValue and Color3.fromRGB(60, 140, 220) or Color3.fromRGB(50, 50, 50)
+    Switch.Text = ""
+    Switch.BorderSizePixel = 0
+    Switch.Parent = Toggle
+    
+    local SwitchCorner = Instance.new("UICorner")
+    SwitchCorner.CornerRadius = UDim.new(1, 0)
+    SwitchCorner.Parent = Switch
+    
+    local toggled = defaultValue
+    
+    Switch.MouseButton1Click:Connect(function()
+        toggled = not toggled
+        TweenService:Create(Switch, TweenInfo.new(0.15), {
+            BackgroundColor3 = toggled and Color3.fromRGB(60, 140, 220) or Color3.fromRGB(50, 50, 50)
+        }):Play()
+        if callback then callback(toggled) end
+    end)
+    
+    return Toggle
+end
+
+local function createSlider(parent, labelText, min, max, default, callback)
+    local Slider = Instance.new("Frame")
+    Slider.Size = UDim2.new(1, 0, 0, 24)
+    Slider.BackgroundTransparency = 1
+    Slider.Parent = parent
+    
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(0.40, 0, 1, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = labelText
+    Label.Font = Enum.Font.Gotham
+    Label.TextSize = 12
+    Label.TextColor3 = Color3.fromRGB(180, 180, 180)
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = Slider
+    
+    local Value = Instance.new("TextLabel")
+    Value.Size = UDim2.new(0, 30, 1, 0)
+    Value.Position = UDim2.new(1, -30, 0, 0)
+    Value.BackgroundTransparency = 1
+    Value.Text = tostring(default)
+    Value.Font = Enum.Font.Gotham
+    Value.TextSize = 12
+    Value.TextColor3 = Color3.fromRGB(120, 120, 120)
+    Value.TextXAlignment = Enum.TextXAlignment.Right
+    Value.Parent = Slider
+    
+    local SliderBack = Instance.new("Frame")
+    SliderBack.Size = UDim2.new(0.45, 0, 0, 3)
+    SliderBack.Position = UDim2.new(0.43, 0, 0.5, -1.5)
+    SliderBack.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    SliderBack.BorderSizePixel = 0
+    SliderBack.Parent = Slider
+    
+    local SliderFill = Instance.new("Frame")
+    SliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    SliderFill.BackgroundColor3 = Color3.fromRGB(60, 140, 220)
+    SliderFill.BorderSizePixel = 0
+    SliderFill.Parent = SliderBack
+    
+    local SliderDot = Instance.new("Frame")
+    SliderDot.Size = UDim2.new(0, 10, 0, 10)
+    SliderDot.Position = UDim2.new((default - min) / (max - min), -5, 0.5, -5)
+    SliderDot.BackgroundColor3 = Color3.fromRGB(60, 140, 220)
+    SliderDot.BorderSizePixel = 0
+    SliderDot.Parent = SliderBack
+    
+    local DotCorner = Instance.new("UICorner")
+    DotCorner.CornerRadius = UDim.new(1, 0)
+    DotCorner.Parent = SliderDot
+    
+    local sliderDragging = false
+    
+    SliderBack.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            sliderDragging = true
+        end
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            sliderDragging = false
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if sliderDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local mouse = UserInputService:GetMouseLocation().X
+            local sliderPos = SliderBack.AbsolutePosition.X
+            local sliderSize = SliderBack.AbsoluteSize.X
+            
+            local percent = math.clamp((mouse - sliderPos) / sliderSize, 0, 1)
+            local value = math.floor(min + (max - min) * percent)
+            
+            Value.Text = tostring(value)
+            SliderFill.Size = UDim2.new(percent, 0, 1, 0)
+            SliderDot.Position = UDim2.new(percent, -5, 0.5, -5)
+            
+            if callback then callback(value) end
+        end
+    end)
+    
+    return Slider
+end
+
+local function createTextBox(parent, labelText, placeholderText, callback)
+    local Container = Instance.new("Frame")
+    Container.Size = UDim2.new(1, 0, 0, 34)
+    Container.BackgroundTransparency = 1
+    Container.Parent = parent
+    
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(0.35, 0, 1, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = labelText
+    Label.Font = Enum.Font.Gotham
+    Label.TextSize = 12
+    Label.TextColor3 = Color3.fromRGB(180, 180, 180)
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = Container
+    
+    local TextBox = Instance.new("TextBox")
+    TextBox.Size = UDim2.new(0.60, 0, 0, 28)
+    TextBox.Position = UDim2.new(0.40, 0, 0.5, -14)
+    TextBox.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+    TextBox.Text = ""
+    TextBox.PlaceholderText = placeholderText
+    TextBox.Font = Enum.Font.Gotham
+    TextBox.TextSize = 11
+    TextBox.TextColor3 = Color3.fromRGB(200, 200, 200)
+    TextBox.BorderSizePixel = 0
+    TextBox.Parent = Container
+    
+    local TextBoxCorner = Instance.new("UICorner")
+    TextBoxCorner.CornerRadius = UDim.new(0, 20)
+    TextBoxCorner.Parent = TextBox
+    
+    if callback then
+        TextBox.FocusLost:Connect(function()
+            callback(TextBox.Text)
+        end)
+    end
+    
+    return Container, TextBox
+end
+
+local function createButton(parent, text, callback)
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(1, 0, 0, 32)
+    Button.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+    Button.Text = text
+    Button.Font = Enum.Font.Gotham
+    Button.TextSize = 12
+    Button.TextColor3 = Color3.fromRGB(200, 200, 200)
+    Button.BorderSizePixel = 0
+    Button.Parent = parent
+    
+    local ButtonCorner = Instance.new("UICorner")
+    ButtonCorner.CornerRadius = UDim.new(0, 20)
+    ButtonCorner.Parent = Button
+    
+    Button.MouseEnter:Connect(function()
+        TweenService:Create(Button, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(42, 42, 42)}):Play()
+    end)
+    Button.MouseLeave:Connect(function()
+        TweenService:Create(Button, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(32, 32, 32)}):Play()
+    end)
+    
+    if callback then
+        Button.MouseButton1Click:Connect(callback)
+    end
+    
+    return Button
+end
 
 -- ========================================
 -- INVISIBILITY FUNCTIONS
@@ -65,7 +327,7 @@ function PlayAnimation(HumanoidCharacter, AnimationID, AnimationSpeed, Time)
     return animationTrack
 end
 
-Invisibile = function()
+local function Invisibile()
     local HUD = LocalPlayer.PlayerGui:FindFirstChild("HUD")
     if HUD then
         HUD.Parent = game:GetService("StarterGui")
@@ -96,8 +358,39 @@ Invisibile = function()
     isInvisible = true
 end
 
-Uninvisible = function()
+local function Uninvisible()
     PlayAnimation(Character, "rbxassetid://7189062263", 0, 5):Stop()
+    
+    if Highlight then
+        Highlight:Destroy()
+        Highlight = nil
+    end
+    isInvisible = false
+end
+
+-- ========================================
+-- MOVEMENT PAGE
+-- ========================================
+local MovementPage, MovementLeft, MovementRight
+local flyToggleButton = nil
+local function toggleFlyState(enabled)
+    flyEnabled = enabled
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if root and enabled then
+        bv = Instance.new("BodyVelocity", root)
+        bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+        bg = Instance.new("BodyGyro", root)
+        bg.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+        print("✈️ Fly ENABLED (Press " .. flyKeybind.Name .. " to toggle)")
+    else
+        if bv then bv:Destroy(); bv = nil end
+        if bg then bg:Destroy(); bg = nil end
+        print("🚶 Fly DISABLED")
+    end
+end
+
+print("✅ [Part 4/4] GUI Interface loaded with proper UI functions")
     
     if Highlight then
         Highlight:Destroy()
